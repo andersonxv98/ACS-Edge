@@ -4,18 +4,20 @@ from PIL import Image, ImageOps
 import numpy as np
 from ant import Ant
 from vizinho import Vizinho
+
 class ACSEdgeImage():
-    def __init__(self, path, initial_pheromone, coef_queda):
+    def __init__(self, path, initial_pheromone, coef_queda, coef_evap_q):
         self.path = path
         self.im = self.loadImg()
-        self.resize(50,50)
-        self.mtx_perom = np.full(self.im.size,float(initial_pheromone),dtype=decimal.Decimal) #representação dos feromonios na imagem
+        #self.resize(50,50) #redimensionar a imagem para testes rapidos
+        self.mtx_perom = np.full(self.im.size,float(initial_pheromone),dtype=float) #representação dos feromonios na imagem
         print("(CONTRUCTOR) MATRIX FEROMN: ", self.mtx_perom)
         self.mtx_heuristc = np.full(self.im.size,0,dtype=np.uint8)
         self.ants = []
         self.q0 = None
         self.Tinit = None
         self.coeficiente_de_queda = coef_queda #
+        self.coef_evaporac_p =coef_evap_q
     def loadImg(self):
         im = Image.open(r""+self.path)
         im = ImageOps.grayscale(im)
@@ -96,7 +98,10 @@ class ACSEdgeImage():
         v1 = self.getLocalGroupOfPixels(i, j)
         v2 = self.getVmax() #busca a intensidade maxima de variação de toda a imagem
         result = v1/v2
-        return decimal.Decimal(result)
+
+        if(result == 0):
+            print("HEURISTIC INFORMATION: ", result, " POSITION: ", (i,j), " V1: ", v1)
+        return float(result)
 
     def sumValuesFromNeighborhood(self, i, j):
         topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight = self.getNeighbors8(i,j)
@@ -112,11 +117,11 @@ class ACSEdgeImage():
         except:
             print("Error:")
 
-        return decimal.Decimal(ph)
+        return float(ph)
 
-    def getPseudoRandomProportional(self, i , j):
+    def getPseudoRandomProportional(self, i , j, lastPositionVisited):
 
-
+        print("PASSO 2.1 (PSEUDO RANDOM PROPORTIONAL")
         topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight = self.getNeighbors8(i, j)
         somaVizinhanca  = self.sumValuesFromNeighborhood(i, j)
         neigt8 = [topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight]
@@ -133,81 +138,112 @@ class ACSEdgeImage():
 
                 pseudorandom1 = (phFromPx * heuristicInfo)
                 pseudorandom2 = (somaVizinhanca *(phFromPx * heuristicInfo))
+                if(heuristicInfo == 0):
+                    print("SVIZINHANÇA: ", somaVizinhanca, " PHEROMON: ",phFromPx , " HEURISCTI: ", heuristicInfo)
+                    pseudorandom2 = 1
+
                 pseudorandom = pseudorandom1/pseudorandom2
 
                 if(pseudorandom >= maxValue):
-                    maxValue = pseudorandom
-                    Nextposition = (neighbor.pi, neighbor.pj)
+                    if(lastPositionVisited[0] != neighbor.pi and lastPositionVisited[1] != neighbor.pj ):
+                        maxValue = pseudorandom
+                        Nextposition = (neighbor.pi, neighbor.pj)
 
 
 
-
-        return Nextposition
+        print("NEXT POSITION: ", Nextposition)
+        return Nextposition, maxValue
 
 
     def setPeromValueFromPixel(self, i, j, val):
-        if(self.mtx_perom[i, j] != val):
-            #print("Atualizou, Anterior: ", self.mtx_perom[i,j], " Atual: ", val)
-            self.mtx_perom[i,j] = val
+        print("Atualizou, Anterior: ", self.mtx_perom[i,j], " Atual: ", val)
+        self.mtx_perom[i,j] = val
         return
-    def updateLocalPheromone(self, i ,j):
+    def updateLocalPheromone(self, i ,j, iteration):
+        print("PASSO 2.2 ATUALIZAR FEROMONIO LOCAL")
         ferom = self.getPeromValueFromPixel(i,  j)
 
-        coef_queda = decimal.Decimal(self.coeficiente_de_queda)
-        fero_inicial = decimal.Decimal(self.Tinit) #valor do feromonio inicialmente
+        coef_queda = float(self.coeficiente_de_queda)
+        fero_inicial = float(self.Tinit) #valor do feromonio inicialmente
         local_feromon1 = ((1 - coef_queda) * ferom)
         local_feromon2 = (coef_queda * fero_inicial)
-        local_feromon = decimal.Decimal(local_feromon1 + local_feromon2)
-
-        #print("feromonio: ", ferom)
-        #print("Coef_queda: ", coef_queda)
-        #print("local1: ", local_feromon1)
-        #print("local2: ", local_feromon2)
-        #print("LOCAL PHEROI : ", local_feromon)
+        local_feromon = float(local_feromon1 + local_feromon2)
         self.setPeromValueFromPixel(i, j, local_feromon)
-        return
+        """
+        print("feromonio: ", ferom)
+        print("Coef_queda: ", coef_queda)
+        print("local1: ", local_feromon1)
+        print("local2: ", local_feromon2)
+        print("LOCAL PHEROI : ", local_feromon)
+        """
+
 
 
     def updateGlobalPheromone(self):
-        return
-        ferom = self.getPeromValueFromPixel(i,j)
-        qtd_ferom_depositado_no_pixel = 0 #isso deve ser igual a média das informações heuristicas associadas com o  pixelpertencente ao tuor dessa formiga
-        coef_evaporac_p = 0 #zero a 1
-        global_feromon = ((1 - coef_evaporac_p) * ferom ) + (coef_evaporac_p * qtd_ferom_depositado_no_pixel)
+        print("PASSO 2.3 UPDATE GLOBAL: ")
+        for i in range(len(self.mtx_perom)):
+            for j in range(len(self.mtx_perom[0])):
+                n_info_heuristic = 0
+                soma_info_heuristic = 0
+                ferom = self.getPeromValueFromPixel(i, j)
+                for ant in self.ants:
+                    if (i, j) in ant.pathHistory:
+                        n_info_heuristic += 1
+                        soma_info_heuristic += self.getHeuristicInformation(i, j)
 
-        return global_feromon
+                # isso deve ser igual a média das informações heuristicas associadas com o  pixelpertencente ao tuor dessa formiga
+                qtd_ferom_depositado_no_pixel = (soma_info_heuristic/n_info_heuristic) if n_info_heuristic> 0 else 0
+                new_feromon_value = ((1 - self.coef_evaporac_p) * ferom) + (
+                            self.coef_evaporac_p * qtd_ferom_depositado_no_pixel)
+                self.setPeromValueFromPixel(i, j, new_feromon_value)
+        return
 
 
     def initACS(self, qtdAnts, initialPeromVal, iteration,qtdPconstrSteps, q0):
+        print("PASSO 1: INICIALIZAR")
         self.Tinit = initialPeromVal
         self.q0 = q0
-        for i in range(qtdAnts):
-            iip = np.random.randint(0, (self.im.size[0]))
-            j = np.random.randint(0, (self.im.size[1]))
-            ant = Ant(iip, j)
-            self.ants.append(ant)
+        self.createAnts(qtdAnts)
         for x in range(self.im.size[0]):
             for y in range(self.im.size[1]):
                 h_info = self.getHeuristicInformation(x, y)
                 self.mtx_heuristc[x, y] = h_info
-        #print("MTX: HEURISTIC INFORMATION: ", self.mtx_heuristc)
-        self.runACS(iteration, qtdPconstrSteps, q0)
+
+        print("PASSO 1.1 : MTX: HEURISTIC INFORMATION: ", self.mtx_heuristc)
+        print("PASSO 1.2 MTX: FEROM INICIAL: ", self.mtx_perom)
+        self.runACS(iteration, qtdPconstrSteps, q0, qtdAnts)
         return
 
-    def runACS(self, iteration,qtdPcontr, q0):
+    def createAnts(self, qtd):
+        for i in range(qtd):
+            iip = np.random.randint(0, (self.im.size[0]))
+            j = np.random.randint(0, (self.im.size[1]))
+            ant = Ant(iip, j)
+            #self.updateLocalPheromone(ant.position[0], ant.position[1], 0)
+            self.ants.append(ant)
+
+
+
+    def runACS(self, iteration,qtdPcontr, q0, qtdAnts):
+        print("PASSO 2: Contrução iterativa e Processo de Atualização")
         for n in range(iteration): #iteração por quantidade de iteração
             for c in range(qtdPcontr): #passos por quantidade de passos
                 for ant in self.ants: #para cada formiga no formigueiro
                     i0, j0 = ant.position #posição atual da formiga (pixel que se encontra na imagem)
-
                     # probabilidade de transição por biased exploration
                         #busca o pixel com maior probabilidade de transição a partir da posição do pixel atual
-                    psdRandX, psdRandY = self.getPseudoRandomProportional(i0, j0)
+                    recente_visitado = ant.pathHistory[len(ant.pathHistory)-2] if c > 0 else ant.position
+
+                    psdS, psdRandPropVAl = self.getPseudoRandomProportional(i0, j0, recente_visitado)
+                    psdRandX = psdS[0]
+                    psdRandY = psdS[1]
                     ant.moveTo(psdRandX, psdRandY)
                     #atualiza  pherom local
-                    self.updateLocalPheromone(psdRandX,psdRandY)
-            print(self.mtx_perom)
-            return
+                    self.updateLocalPheromone(psdRandX,psdRandY, n)
+
+
+            #print(self.mtx_perom)
+            #return
             self.updateGlobalPheromone()
 
         print(self.mtx_perom)
