@@ -9,7 +9,7 @@ class ACSEdgeImage():
     def __init__(self, path, initial_pheromone, coef_queda, coef_evap_q):
         self.path = path
         self.im = self.loadImg()
-        #self.resize(50,50) #redimensionar a imagem para testes rapidos
+        self.resize(256,256) #redimensionar a imagem para testes rapidos
         self.mtx_perom = np.full(self.im.size,float(initial_pheromone),dtype=float) #representação dos feromonios na imagem
         print("(CONTRUCTOR) MATRIX FEROMN: ", self.mtx_perom)
         self.mtx_heuristc = np.full(self.im.size,0,dtype=np.uint8)
@@ -99,8 +99,8 @@ class ACSEdgeImage():
         v2 = self.getVmax() #busca a intensidade maxima de variação de toda a imagem
         result = v1/v2
 
-        if(result == 0):
-            print("HEURISTIC INFORMATION: ", result, " POSITION: ", (i,j), " V1: ", v1)
+        #if(result == 0):
+            #print("HEURISTIC INFORMATION: ", result, " POSITION: ", (i,j), " V1: ", v1)
         return float(result)
 
     def sumValuesFromNeighborhood(self, i, j):
@@ -121,7 +121,7 @@ class ACSEdgeImage():
 
     def getPseudoRandomProportional(self, i , j, lastPositionVisited):
 
-        print("PASSO 2.1 (PSEUDO RANDOM PROPORTIONAL")
+        #print("PASSO 2.1 (PSEUDO RANDOM PROPORTIONAL")
         topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight = self.getNeighbors8(i, j)
         somaVizinhanca  = self.sumValuesFromNeighborhood(i, j)
         neigt8 = [topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight]
@@ -139,7 +139,7 @@ class ACSEdgeImage():
                 pseudorandom1 = (phFromPx * heuristicInfo)
                 pseudorandom2 = (somaVizinhanca *(phFromPx * heuristicInfo))
                 if(heuristicInfo == 0):
-                    print("SVIZINHANÇA: ", somaVizinhanca, " PHEROMON: ",phFromPx , " HEURISCTI: ", heuristicInfo)
+                    #print("SVIZINHANÇA: ", somaVizinhanca, " PHEROMON: ",phFromPx , " HEURISCTI: ", heuristicInfo)
                     pseudorandom2 = 1
 
                 pseudorandom = pseudorandom1/pseudorandom2
@@ -151,16 +151,16 @@ class ACSEdgeImage():
 
 
 
-        print("NEXT POSITION: ", Nextposition)
+        #print("NEXT POSITION: ", Nextposition)
         return Nextposition, maxValue
 
 
     def setPeromValueFromPixel(self, i, j, val):
-        print("Atualizou, Anterior: ", self.mtx_perom[i,j], " Atual: ", val)
+        #print("Atualizou, Anterior: ", self.mtx_perom[i,j], " Atual: ", val)
         self.mtx_perom[i,j] = val
         return
     def updateLocalPheromone(self, i ,j, iteration):
-        print("PASSO 2.2 ATUALIZAR FEROMONIO LOCAL")
+        #print("PASSO 2.2 ATUALIZAR FEROMONIO LOCAL")
         ferom = self.getPeromValueFromPixel(i,  j)
 
         coef_queda = float(self.coeficiente_de_queda)
@@ -180,7 +180,7 @@ class ACSEdgeImage():
 
 
     def updateGlobalPheromone(self):
-        print("PASSO 2.3 UPDATE GLOBAL: ")
+        #print("PASSO 2.3 UPDATE GLOBAL: ")
         for i in range(len(self.mtx_perom)):
             for j in range(len(self.mtx_perom[0])):
                 n_info_heuristic = 0
@@ -200,7 +200,7 @@ class ACSEdgeImage():
 
 
     def initACS(self, qtdAnts, initialPeromVal, iteration,qtdPconstrSteps, q0):
-        print("PASSO 1: INICIALIZAR")
+        #print("PASSO 1: INICIALIZAR")
         self.Tinit = initialPeromVal
         self.q0 = q0
         self.createAnts(qtdAnts)
@@ -209,8 +209,8 @@ class ACSEdgeImage():
                 h_info = self.getHeuristicInformation(x, y)
                 self.mtx_heuristc[x, y] = h_info
 
-        print("PASSO 1.1 : MTX: HEURISTIC INFORMATION: ", self.mtx_heuristc)
-        print("PASSO 1.2 MTX: FEROM INICIAL: ", self.mtx_perom)
+        #print("PASSO 1.1 : MTX: HEURISTIC INFORMATION: ", self.mtx_heuristc)
+        #print("PASSO 1.2 MTX: FEROM INICIAL: ", self.mtx_perom)
         self.runACS(iteration, qtdPconstrSteps, q0, qtdAnts)
         return
 
@@ -225,7 +225,7 @@ class ACSEdgeImage():
 
 
     def runACS(self, iteration,qtdPcontr, q0, qtdAnts):
-        print("PASSO 2: Contrução iterativa e Processo de Atualização")
+        #print("PASSO 2: Contrução iterativa e Processo de Atualização")
         for n in range(iteration): #iteração por quantidade de iteração
             for c in range(qtdPcontr): #passos por quantidade de passos
                 for ant in self.ants: #para cada formiga no formigueiro
@@ -245,5 +245,6 @@ class ACSEdgeImage():
             #print(self.mtx_perom)
             #return
             self.updateGlobalPheromone()
+            print("PROGRESSO DO ALGORITMO: ", n/iteration)
 
         print(self.mtx_perom)
