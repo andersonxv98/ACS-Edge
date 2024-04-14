@@ -115,7 +115,7 @@ class ACSEdgeImage():
         try:
             ph = self.mtx_perom[i, j]
         except:
-            print("Error:")
+            return float(ph)
 
         return float(ph)
 
@@ -159,6 +159,7 @@ class ACSEdgeImage():
         #print("Atualizou, Anterior: ", self.mtx_perom[i,j], " Atual: ", val)
         self.mtx_perom[i,j] = val
         return
+    
     def updateLocalPheromone(self, i ,j, iteration):
         #print("PASSO 2.2 ATUALIZAR FEROMONIO LOCAL")
         ferom = self.getPeromValueFromPixel(i,  j)
@@ -182,7 +183,7 @@ class ACSEdgeImage():
     def updateGlobalPheromone(self):
         #print("PASSO 2.3 UPDATE GLOBAL: ")
         for i in range(len(self.mtx_perom)):
-            for j in range(len(self.mtx_perom[0])):
+            for j in range(len(self.mtx_perom[i])):
                 n_info_heuristic = 0
                 soma_info_heuristic = 0
                 ferom = self.getPeromValueFromPixel(i, j)
@@ -200,10 +201,12 @@ class ACSEdgeImage():
 
 
     def initACS(self, qtdAnts, initialPeromVal, iteration,qtdPconstrSteps, q0):
-        #print("PASSO 1: INICIALIZAR")
+        print("PASSO 1: INICIALIZAR")
         self.Tinit = initialPeromVal
         self.q0 = q0
         self.createAnts(qtdAnts)
+        
+
         for x in range(self.im.size[0]):
             for y in range(self.im.size[1]):
                 h_info = self.getHeuristicInformation(x, y)
@@ -211,9 +214,88 @@ class ACSEdgeImage():
 
         #print("PASSO 1.1 : MTX: HEURISTIC INFORMATION: ", self.mtx_heuristc)
         #print("PASSO 1.2 MTX: FEROM INICIAL: ", self.mtx_perom)
-        self.runACS(iteration, qtdPconstrSteps, q0, qtdAnts)
-        return
+        result = self.runACS(iteration, qtdPconstrSteps, q0)
+        return result
+    def getQtdPheromFromTo(self, pI, pJ):
+        result = self.getPeromValueFromPixel(pI[0], pI[1]) + self.getPeromValueFromPixel(pJ[0], pJ[1])
+        return result
 
+
+
+    def getSumPheromNeigtborhood(self, i, j):
+        TopLeft, TopCenter, TopRight, CenterLeft, CenterRight, BottomLeft, BottomCenter, BottomRight = self.getNeighbors8(i, j)
+        TopLeft = (TopLeft.pi, TopLeft.pj)
+        TopCenter= (TopCenter.pi, TopCenter.pj)
+        TopRight= (TopRight.pi, TopRight.pj)
+        CenterLeft = (CenterLeft.pi, CenterLeft.pj)
+        CenterRight = (CenterRight.pi, CenterRight.pj)
+        BottomLeft = (BottomLeft.pi, BottomLeft.pj)
+        BottomCenter = (BottomCenter.pi, BottomCenter.pj)
+        BottomRight = (BottomRight.pi, BottomRight.pj)
+
+        TopLeft = self.getPeromValueFromPixel(TopLeft[0], TopLeft[1])
+        TopCenter = self.getPeromValueFromPixel(TopCenter[0], TopCenter[1])
+        TopRight = self.getPeromValueFromPixel(TopRight[0], TopRight[1])
+        CenterLeft = self.getPeromValueFromPixel(CenterLeft[0], CenterLeft[1])
+        CenterRight = self.getPeromValueFromPixel(CenterRight[0], CenterRight[1])
+        BottomLeft = self.getPeromValueFromPixel(BottomLeft[0], BottomLeft[1])
+        BottomCenter = self.getPeromValueFromPixel(BottomCenter[0], BottomCenter[1])
+        BottomRight = self.getPeromValueFromPixel(BottomRight[0], BottomRight[1])
+
+        sumPherom8 = TopLeft+TopCenter+TopRight+CenterLeft+CenterRight+BottomLeft+BottomCenter+BottomRight
+        return sumPherom8
+        center = (i, j)
+
+    def getSumHeuristic(self, i , j):
+        TopLeft, TopCenter, TopRight, CenterLeft, CenterRight, BottomLeft, BottomCenter, BottomRight = self.getNeighbors8(i, j)
+        TopLeft = (TopLeft.pi, TopLeft.pj)
+        TopCenter= (TopCenter.pi, TopCenter.pj)
+        TopRight= (TopRight.pi, TopRight.pj)
+        CenterLeft = (CenterLeft.pi, CenterLeft.pj)
+        CenterRight = (CenterRight.pi, CenterRight.pj)
+        BottomLeft = (BottomLeft.pi, BottomLeft.pj)
+        BottomCenter = (BottomCenter.pi, BottomCenter.pj)
+        BottomRight = (BottomRight.pi, BottomRight.pj)
+        
+
+        TopLeft = self.getHeuristicInformation(TopLeft[0], TopLeft[1])
+        TopCenter = self.getHeuristicInformation(TopCenter[0], TopCenter[1])
+        TopRight = self.getHeuristicInformation(TopRight[0], TopRight[1])
+        CenterLeft = self.getHeuristicInformation(CenterLeft[0], CenterLeft[1])
+        CenterRight = self.getHeuristicInformation(CenterRight[0], CenterRight[1])
+        BottomLeft = self.getHeuristicInformation(BottomLeft[0], BottomLeft[1])
+        BottomCenter = self.getHeuristicInformation(BottomCenter[0], BottomCenter[1])
+        BottomRight = self.getHeuristicInformation(BottomRight[0], BottomRight[1])
+
+        sumHeuri8= TopLeft+TopCenter+TopRight+CenterLeft+CenterRight+BottomLeft+BottomCenter+BottomRight
+
+        return sumHeuri8
+        
+
+    def getPointTransitionProb(self, i, j):
+        topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight = self.getNeighbors8(i, j)
+        
+        neigt8 = [topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight]
+        pro_val = 0
+        Nextposition = (i, j)
+        for neighbor in neigt8:
+            npi= neighbor.pi
+            npj = neighbor.pj
+            prob = self.transitionPropability((i, j), (npi, npj))
+            if prob >= pro_val:
+                pro_val =prob
+                Nextposition = (npi, npj)
+
+        return Nextposition;
+    def transitionPropability(self, Pi , Pj):
+        Tij = self.getPeromValueFromPixel(Pi[0], Pi[1]) + self.getPeromValueFromPixel(Pj[0], Pj[1])
+        Nij = self.getHeuristicInformation(Pi[0] , Pi[1]) + self.getHeuristicInformation(Pj[0] , Pj[1])
+        
+        part1 = Tij * Nij
+        part2 = self.getSumPheromNeigtborhood(Pi[0], Pi[1]) * self.getSumHeuristic(Pi[0], Pi[1])
+
+        result  = part1 / part2
+        return result
     def createAnts(self, qtd):
         for i in range(qtd):
             iip = np.random.randint(0, (self.im.size[0]))
@@ -224,8 +306,8 @@ class ACSEdgeImage():
 
 
 
-    def runACS(self, iteration,qtdPcontr, q0, qtdAnts):
-        #print("PASSO 2: Contrução iterativa e Processo de Atualização")
+    def runACS(self, iteration,qtdPcontr, q0):
+        print("PASSO 2: Contrução iterativa e Processo de Atualização")
         for n in range(iteration): #iteração por quantidade de iteração
             for c in range(qtdPcontr): #passos por quantidade de passos
                 for ant in self.ants: #para cada formiga no formigueiro
@@ -234,7 +316,11 @@ class ACSEdgeImage():
                         #busca o pixel com maior probabilidade de transição a partir da posição do pixel atual
                     recente_visitado = ant.pathHistory[len(ant.pathHistory)-2] if c > 0 else ant.position
 
-                    psdS, psdRandPropVAl = self.getPseudoRandomProportional(i0, j0, recente_visitado)
+                    
+                    if self.coeficiente_de_queda <= q0:
+                        psdS, psdRandPropVAl = self.getPseudoRandomProportional(i0, j0, recente_visitado)
+                    else:
+                        psdS = self.getPointTransitionProb(i0, j0)
                     psdRandX = psdS[0]
                     psdRandY = psdS[1]
                     ant.moveTo(psdRandX, psdRandY)
@@ -247,4 +333,4 @@ class ACSEdgeImage():
             self.updateGlobalPheromone()
             print("PROGRESSO DO ALGORITMO: ", n/iteration)
 
-        print(self.mtx_perom)
+        return (self.mtx_perom)
