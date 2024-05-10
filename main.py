@@ -7,12 +7,12 @@ def main():
     #print("Hello World!")
     initial_pherom = 0.1 #deve ser valor maior que zero (0,1]
     
-    for i in range(10):
+    for i in range(4,10):
         im = ACSEdgeImage("ImageTests/lena.png", initial_pherom, 0.05, 0.1)
         im.showImg()
         q0 = i / 10
         img_phero = im.initACS(512,initial_pherom, 10, 40, q0)
-        Image.fromarray(img_phero).show()
+        #Image.fromarray(np.array(img_phero)).show()
         print("IMG PHERO: ", img_phero)
         img_phero_ = img_phero
         limiar_otsu = filters.threshold_otsu(img_phero_)
@@ -20,10 +20,10 @@ def main():
         print("Value of limiar_otsu:", limiar_otsu) 
         img_bin = img_phero > limiar_otsu
     
-        im = Image.fromarray((img_bin * 255).astype(np.uint8))
-        im.save("./"+"lana_phero"+str(i)+".png")
+        im = Image.fromarray((img_bin.T * 255).astype(np.uint8))
+        im.save("./"+"lana_ResetM_dependsLKTour"+str(i)+".png")
         #intensidade = im.getPixelIntensityValue(100,100)
         #print("INtensidade: ", intensidade)
 
-
+        #return
 main()

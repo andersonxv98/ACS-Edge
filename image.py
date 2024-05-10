@@ -11,8 +11,8 @@ class ACSEdgeImage():
         self.im = self.loadImg()
         self.resize(256,256) #redimensionar a imagem para testes rapidos
         self.mtx_perom = np.full(self.im.size,float(initial_pheromone),dtype=float) #representação dos feromonios na imagem
-        print("(CONTRUCTOR) MATRIX FEROMN: ", self.mtx_perom)
-        self.mtx_heuristc = np.full(self.im.size,0,dtype=np.uint8)
+        print("(CONTRUCTOR) MATRIX FEROMN: ", self.mtx_perom.size)
+        #self.mtx_heuristc = np.full(self.im.size,0,dtype=np.uint8)
         self.ants = []
         self.q0 = None
         self.Tinit = None
@@ -131,23 +131,25 @@ class ACSEdgeImage():
 
             npi= neighbor.pi
             npj = neighbor.pj
-            if (npi >= 0 and npj >= 0 and npi < self.im.size[0] and npj < self.im.size[1]):
+            #print("Npi: ", npi, " NPJ: ", npj)
+            if (npi >= 0 and npi < self.im.size[0]):
+                if npj >= 0 and npj < self.im.size[1]:
+                    phFromPx = self.getPeromValueFromPixel(npi, npj)
+                    heuristicInfo = self.getHeuristicInformation(npi, npj)
 
-                phFromPx = self.getPeromValueFromPixel(npi, npj)
-                heuristicInfo = self.getHeuristicInformation(npi, npj)
+                    pseudorandom1 = (phFromPx * heuristicInfo)
+                    pseudorandom2 = (somaVizinhanca *(phFromPx * heuristicInfo))
+                    if(heuristicInfo == 0 or phFromPx == 0):
+                        #print("SVIZINHANÇA: ", somaVizinhanca, " PHEROMON: ",phFromPx , " HEURISCTI: ", heuristicInfo)
+                        pseudorandom2 = 1
 
-                pseudorandom1 = (phFromPx * heuristicInfo)
-                pseudorandom2 = (somaVizinhanca *(phFromPx * heuristicInfo))
-                if(heuristicInfo == 0):
-                    #print("SVIZINHANÇA: ", somaVizinhanca, " PHEROMON: ",phFromPx , " HEURISCTI: ", heuristicInfo)
-                    pseudorandom2 = 1
-
-                pseudorandom = pseudorandom1/pseudorandom2
-
-                if(pseudorandom >= maxValue):
-                    if(lastPositionVisited[0] != neighbor.pi and lastPositionVisited[1] != neighbor.pj ):
-                        maxValue = pseudorandom
-                        Nextposition = (neighbor.pi, neighbor.pj)
+                    pseudorandom = pseudorandom1/pseudorandom2
+                    if(pseudorandom > 1):
+                        print("Pseudo random: ", pseudorandom)
+                    if(pseudorandom >= maxValue):
+                        if(lastPositionVisited[0] != neighbor.pi and lastPositionVisited[1] != neighbor.pj ):
+                            maxValue = pseudorandom
+                            Nextposition = (neighbor.pi, neighbor.pj)
 
 
 
@@ -157,12 +159,12 @@ class ACSEdgeImage():
 
     def setPeromValueFromPixel(self, i, j, val):
         #print("Atualizou, Anterior: ", self.mtx_perom[i,j], " Atual: ", val)
-        self.mtx_perom[i,j] = val
+        self.mtx_perom[i][j] = val
         return
     
-    def updateLocalPheromone(self, i ,j, iteration):
+    def updateLocalPheromone(self, i ,j, ferom):
         #print("PASSO 2.2 ATUALIZAR FEROMONIO LOCAL")
-        ferom = self.getPeromValueFromPixel(i,  j)
+        #ferom = self.getPeromValueFromPixel(i,  j)
 
         coef_queda = float(self.coeficiente_de_queda)
         fero_inicial = float(self.Tinit) #valor do feromonio inicialmente
@@ -170,14 +172,8 @@ class ACSEdgeImage():
         local_feromon2 = (coef_queda * fero_inicial)
         local_feromon = float(local_feromon1 + local_feromon2)
         self.setPeromValueFromPixel(i, j, local_feromon)
-        """
-        print("feromonio: ", ferom)
-        print("Coef_queda: ", coef_queda)
-        print("local1: ", local_feromon1)
-        print("local2: ", local_feromon2)
-        print("LOCAL PHEROI : ", local_feromon)
-        """
-
+        
+        return
 
 
     def updateGlobalPheromone(self):
@@ -187,6 +183,10 @@ class ACSEdgeImage():
                 n_info_heuristic = 0
                 soma_info_heuristic = 0
                 ferom = self.getPeromValueFromPixel(i, j)
+
+                #vreificação de o pheromon ta acima de 1
+                if ferom > 1:
+                    print("PHEROM: ", ferom)
                 for ant in self.ants:
                     if (i, j) in ant.pathHistory:
                         n_info_heuristic += 1
@@ -207,18 +207,16 @@ class ACSEdgeImage():
         self.createAnts(qtdAnts)
         
 
-        for x in range(self.im.size[0]):
-            for y in range(self.im.size[1]):
-                h_info = self.getHeuristicInformation(x, y)
-                self.mtx_heuristc[x, y] = h_info
+        #for x in range(self.im.size[0]):
+        #    for y in range(self.im.size[1]):
+                #h_info = self.getHeuristicInformation(x, y)
+               # self.mtx_heuristc[x][y] = h_info
 
         #print("PASSO 1.1 : MTX: HEURISTIC INFORMATION: ", self.mtx_heuristc)
         #print("PASSO 1.2 MTX: FEROM INICIAL: ", self.mtx_perom)
         result = self.runACS(iteration, qtdPconstrSteps, q0)
         return result
-    def getQtdPheromFromTo(self, pI, pJ):
-        result = self.getPeromValueFromPixel(pI[0], pI[1]) + self.getPeromValueFromPixel(pJ[0], pJ[1])
-        return result
+
 
 
 
@@ -244,7 +242,7 @@ class ACSEdgeImage():
 
         sumPherom8 = TopLeft+TopCenter+TopRight+CenterLeft+CenterRight+BottomLeft+BottomCenter+BottomRight
         return sumPherom8
-        center = (i, j)
+        
 
     def getSumHeuristic(self, i , j):
         TopLeft, TopCenter, TopRight, CenterLeft, CenterRight, BottomLeft, BottomCenter, BottomRight = self.getNeighbors8(i, j)
@@ -272,7 +270,7 @@ class ACSEdgeImage():
         return sumHeuri8
         
 
-    def getPointTransitionProb(self, i, j):
+    def getPointTransitionProb(self, i, j, lastp):
         topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight = self.getNeighbors8(i, j)
         
         neigt8 = [topLeft, topCenter, topRight, centerLeft, centerRight, bottomLeft, bottomCenter, bottomRight]
@@ -281,10 +279,14 @@ class ACSEdgeImage():
         for neighbor in neigt8:
             npi= neighbor.pi
             npj = neighbor.pj
-            prob = self.transitionPropability((i, j), (npi, npj))
-            if prob >= pro_val:
-                pro_val =prob
-                Nextposition = (npi, npj)
+            if npi != lastp[0] and npj != lastp[1]:
+                if(npi >= 0 and npj >= 0 and npi < self.im.size[0] and npj < self.im.size[1]):
+                    prob = self.transitionPropability((i, j), (npi, npj))
+                    if prob > 1:
+                        print("PROBABILIDADE: ", prob)
+                    if prob >= pro_val:
+                        pro_val =prob
+                        Nextposition = (npi, npj)
 
         return Nextposition;
     def transitionPropability(self, Pi , Pj):
@@ -292,16 +294,20 @@ class ACSEdgeImage():
         Nij = self.getHeuristicInformation(Pi[0] , Pi[1]) + self.getHeuristicInformation(Pj[0] , Pj[1])
         
         part1 = Tij * Nij
+        
         part2 = self.getSumPheromNeigtborhood(Pi[0], Pi[1]) * self.getSumHeuristic(Pi[0], Pi[1])
 
         result  = part1 / part2
+        if result > 1:
+            print("PROBABILIDADE: ", result)
+            print("TIJ: ", Tij, "Nij: ", Nij)
+            print("part1: ", part1, "part2: ", part2)
         return result
     def createAnts(self, qtd):
         for i in range(qtd):
             iip = np.random.randint(0, (self.im.size[0]))
             j = np.random.randint(0, (self.im.size[1]))
             ant = Ant(iip, j)
-            #self.updateLocalPheromone(ant.position[0], ant.position[1], 0)
             self.ants.append(ant)
 
 
@@ -320,17 +326,24 @@ class ACSEdgeImage():
                     if self.coeficiente_de_queda <= q0:
                         psdS, psdRandPropVAl = self.getPseudoRandomProportional(i0, j0, recente_visitado)
                     else:
-                        psdS = self.getPointTransitionProb(i0, j0)
+                        psdS = self.getPointTransitionProb(i0, j0, recente_visitado)
                     psdRandX = psdS[0]
                     psdRandY = psdS[1]
                     ant.moveTo(psdRandX, psdRandY)
+                    feromonio = ant.getPheromon()
                     #atualiza  pherom local
-                    self.updateLocalPheromone(psdRandX,psdRandY, n)
+                    if (psdRandX == 256 or psdRandY == 256):
+                        print("ERRO RETORNO, ", (psdRandX, psdRandY))
+                        return
+                    self.updateLocalPheromone(psdRandX,psdRandY, feromonio)
 
+            
 
             #print(self.mtx_perom)
             #return
             self.updateGlobalPheromone()
             print("PROGRESSO DO ALGORITMO: ", n/iteration)
-
+            print("MAX: ",np.array(self.mtx_perom).max())
+            #Image.fromarray(np.array(self.mtx_perom).T * 255).show()
+            
         return (self.mtx_perom)
