@@ -6,15 +6,16 @@ from ant import Ant
 from vizinho import Vizinho
 
 class ACSEdgeImage():
-    def __init__(self, path, initial_pheromone, coef_queda, coef_evap_q):
+    def __init__(self, path, initial_pheromone, coef_queda, coef_evap_q, p):
         self.path = path
         self.im = self.loadImg()
-        self.resize(256,256) #redimensionar a imagem para testes rapidos
+        #self.resize(256,256) #redimensionar a imagem para testes rapidos
         self.mtx_perom = np.full(self.im.size,float(initial_pheromone),dtype=float) #representação dos feromonios na imagem
         print("(CONTRUCTOR) MATRIX FEROMN: ", self.mtx_perom.size)
         #self.mtx_heuristc = np.full(self.im.size,0,dtype=np.uint8)
         self.ants = []
         self.q0 = None
+        self.p =p
         self.Tinit = None
         self.coeficiente_de_queda = coef_queda #
         self.coef_evaporac_p =coef_evap_q
@@ -323,7 +324,7 @@ class ACSEdgeImage():
                     recente_visitado = ant.pathHistory[len(ant.pathHistory)-2] if c > 0 else ant.position
 
                     
-                    if self.coeficiente_de_queda <= q0:
+                    if self.p <= q0:
                         psdS, psdRandPropVAl = self.getPseudoRandomProportional(i0, j0, recente_visitado)
                     else:
                         psdS = self.getPointTransitionProb(i0, j0, recente_visitado)
@@ -332,7 +333,7 @@ class ACSEdgeImage():
                     ant.moveTo(psdRandX, psdRandY)
                     feromonio = ant.getPheromon()
                     #atualiza  pherom local
-                    if (psdRandX == 256 or psdRandY == 256):
+                    if (psdRandX > self.im.size[0] or psdRandY  > self.im.size[1] ):
                         print("ERRO RETORNO, ", (psdRandX, psdRandY))
                         return
                     self.updateLocalPheromone(psdRandX,psdRandY, feromonio)
