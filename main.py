@@ -9,7 +9,7 @@ def main():
     initial_pherom = 0.1 #deve ser valor maior que zero (0,1]
     p = random.uniform(0, 1) #VALOR DE P GERADO UNIFORMEMENTE ENTRE 0 e 1 (CONDIÇÇÂO ACS)
     print("VALO P: ", p)
-    for i in range(1,10):
+    for i in range(3,10):
         im = ACSEdgeImage("ImageTests/lena.png", initial_pherom, 0.05, 0.1, p=p)
         im.showImg()
         q0 = i / 10
