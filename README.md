@@ -10,3 +10,5 @@ pip install -r requirements.txt
 ```py
 python main.py
 ```
+
+Obs: a imagem de entrada que está configurada é a do pikachu (50x50) que demora entre 3~10 minutos. Os testes com a Lena demoraram mais do que 9h23min.

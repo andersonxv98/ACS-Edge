@@ -6,7 +6,7 @@ class ACSEdgeImage():
     def __init__(self, path, initial_pheromone, coef_queda, coef_evap_q, p):
         self.path = path
         self.img = self.loadImg()
-        self.resize(256,256) #redimensionar a imagem para testes rapidos
+        # self.resize(256,256) #redimensionar a imagem para testes rapidos (lena)
         self.mtx_pherom = np.full(self.img.size,float(initial_pheromone),dtype=float) #representação dos feromonios na imagem
         self.ants = []
         self.q0 = None
