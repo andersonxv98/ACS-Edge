@@ -6,7 +6,7 @@ class Ant():
 
     def getPheromon(self):
         return self.pheromon / len(self.pathHistory)
-    
+
     def moveTo(self, n_i, n_j):
         self.position = (n_i, n_j)
         self.pathHistory.append(self.position)

@@ -2,6 +2,17 @@
 O presente trabalho consiste na implementação da abordagem de Baterina, Anna & Oppus, Carlos. (2010). Image edge detection using ant colony optimization. WSEAS Transactions on Signal Processing. 6.
 
 # Iniciando
+- Criando o Ambiente
+*Windows*
+```py
+python -m venv venv
+```
+```
+venv\Scripts\activate.bat
+```
+```py
+python -m pip install --upgrade pip
+```
 - Instalando dependências
 ```py
 pip install -r requirements.txt
