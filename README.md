@@ -1,5 +1,12 @@
 # ACS-Edge_PPGCC
- Ant Colony optimization Edge finder
+O presente trabalho consiste na implementação da abordagem de Baterina, Anna & Oppus, Carlos. (2010). Image edge detection using ant colony optimization. WSEAS Transactions on Signal Processing. 6.
 
-
- Start With main.py file
+# Iniciando
+- Instalando dependências
+```py
+pip install -r requirements.txt
+```
+- Executando
+```py
+python main.py
+```

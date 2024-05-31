@@ -1,4 +1,3 @@
-
 class Ant():
     def __init__(self,  i, j):
         self.pathHistory = []
@@ -6,8 +5,7 @@ class Ant():
         self.pheromon = 1
 
     def getPheromon(self):
-        phero= self.pheromon / len(self.pathHistory)
-        return phero
+        return self.pheromon / len(self.pathHistory)
     
     def moveTo(self, n_i, n_j):
         self.position = (n_i, n_j)
@@ -19,5 +17,3 @@ class Ant():
 
     def getPosition(self):
         return self.position
-
-
